@@ -1,0 +1,11 @@
+data/
+.env
+__pycache__/
+*.pyc
+node_modules/
+frontend/dist/
+*.egg-info/
+.venv/
+*.lock
+!package-lock.json
+tsconfig.tsbuildinfo
