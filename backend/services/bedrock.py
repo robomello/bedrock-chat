@@ -1,31 +1,42 @@
-"""AWS Bedrock client with streaming via asyncio."""
+"""AWS Bedrock client with streaming via Anthropic SDK."""
 from __future__ import annotations
 
 import asyncio
 import logging
 from collections.abc import AsyncGenerator
 
-import boto3
+import anthropic
 
 logger = logging.getLogger(__name__)
 
 
 class BedrockService:
-    def __init__(self, region: str, profile: str = ""):
-        session_kwargs = {}
-        if profile:
-            session_kwargs["profile_name"] = profile
-        self._session_kwargs = session_kwargs
+    def __init__(
+        self,
+        region: str,
+        profile: str = "",
+        endpoint_url: str = "",
+        api_key: str = "",
+    ):
         self._region = region
+        self._endpoint_url = endpoint_url or ""
+        self._api_key = api_key or ""
+        self._profile = profile
         self._client = None
 
-    def _get_client(self):
-        """Lazy client creation -- handles credential refresh."""
+    def _get_client(self) -> anthropic.AnthropicBedrock:
+        """Lazy client creation."""
         if self._client is None:
-            session = boto3.Session(**self._session_kwargs)
-            self._client = session.client(
-                "bedrock-runtime", region_name=self._region
-            )
+            kwargs = {
+                "aws_region": self._region,
+                "aws_access_key": "unused",
+                "aws_secret_key": "unused",
+            }
+            if self._endpoint_url:
+                kwargs["base_url"] = self._endpoint_url
+            if self._api_key:
+                kwargs["default_headers"] = {"api-key": self._api_key}
+            self._client = anthropic.AnthropicBedrock(**kwargs)
         return self._client
 
     def _reset_client(self):
@@ -40,38 +51,40 @@ class BedrockService:
         max_tokens: int = 8192,
         temperature: float = 0.7,
     ) -> AsyncGenerator[str, None]:
-        """Stream chat response from Bedrock using converse_stream."""
-        bedrock_messages = [
-            {"role": m["role"], "content": [{"text": m["content"]}]}
+        """Stream chat response from Bedrock using Anthropic SDK."""
+        anthropic_messages = [
+            {"role": m["role"], "content": m["content"]}
             for m in messages
         ]
 
         kwargs = {
-            "modelId": model_id,
-            "messages": bedrock_messages,
-            "inferenceConfig": {
-                "maxTokens": max_tokens,
-                "temperature": temperature,
-            },
+            "model": model_id,
+            "messages": anthropic_messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
         }
         if system_prompt:
-            kwargs["system"] = [{"text": system_prompt}]
+            kwargs["system"] = system_prompt
 
         client = self._get_client()
-        response = await asyncio.to_thread(client.converse_stream, **kwargs)
+
+        def _do_stream():
+            chunks = []
+            with client.messages.stream(**kwargs) as stream:
+                for text in stream.text_stream:
+                    chunks.append(text)
+            return chunks
 
         queue: asyncio.Queue = asyncio.Queue()
 
         def _read_stream():
             try:
-                for event in response["stream"]:
-                    if "contentBlockDelta" in event:
-                        delta = event["contentBlockDelta"]["delta"]
-                        if "text" in delta:
-                            queue.put_nowait(delta["text"])
-                queue.put_nowait(None)  # Success sentinel
+                with client.messages.stream(**kwargs) as stream:
+                    for text in stream.text_stream:
+                        queue.put_nowait(text)
+                queue.put_nowait(None)
             except Exception as e:
-                queue.put_nowait(e)  # Error sentinel
+                queue.put_nowait(e)
 
         loop = asyncio.get_running_loop()
         loop.run_in_executor(None, _read_stream)
@@ -88,12 +101,15 @@ class BedrockService:
         """Test AWS credentials and Bedrock access."""
         try:
             client = self._get_client()
-            await asyncio.to_thread(
-                client.converse,
-                modelId="us.anthropic.claude-haiku-4-5-20251001-v1:0",
-                messages=[{"role": "user", "content": [{"text": "hi"}]}],
-                inferenceConfig={"maxTokens": 1},
-            )
+
+            def _test():
+                return client.messages.create(
+                    model="claude-opus-4-6",
+                    max_tokens=5,
+                    messages=[{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
+                )
+
+            await asyncio.to_thread(_test)
             return {"valid": True, "error": None}
         except Exception as e:
             self._reset_client()

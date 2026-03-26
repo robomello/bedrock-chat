@@ -11,12 +11,14 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
     aws_region: str = "us-east-1"
     aws_profile: str = ""
+    aws_endpoint_url: str = ""
+    aws_api_key: str = ""
     default_model_id: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
     max_message_length: int = 50000
     max_context_messages: int = 50
     cors_origins: list[str] = ["http://127.0.0.1:8080"]
 
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="BEDROCK_CHAT_")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="BEDROCK_CHAT_", extra="ignore")
 
 
 @lru_cache

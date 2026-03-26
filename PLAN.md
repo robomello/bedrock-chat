@@ -14,11 +14,15 @@ Key design goals:
 
 ## Research Findings
 
-### AWS Bedrock Converse Stream API
-- `converse_stream()` returns an event stream with `contentBlockDelta` events containing text chunks
-- Events: `messageStart`, `contentBlockStart`, `contentBlockDelta`, `contentBlockStop`, `messageStop`
-- Requires `bedrock:InvokeModelWithResponseStream` IAM permission
-- Model ID format: `us.anthropic.claude-opus-4-6-v1:0` (cross-region inference profile with version suffix)
+### AWS Bedrock via Mercedes GenAI Nexus Gateway
+- **Gateway**: `https://genai-nexus.api.corpinter.net` (corporate Bedrock proxy)
+- **Auth**: `api-key` header (UUID format, NOT standard AWS SigV4)
+- **SDK**: `anthropic.AnthropicBedrock` with `default_headers={"api-key": "..."}` and dummy AWS creds
+- **NOT boto3**: The Nexus gateway does NOT support boto3's `converse_stream()` API — only the Anthropic SDK's Messages API works
+- **Model ID format**: Simplified names like `claude-opus-4-6` (NOT `us.anthropic.claude-opus-4-6-v1:0`)
+- **Streaming**: `client.messages.stream()` → `text_stream` iterator
+- **Config**: `.env` uses `BEDROCK_CHAT_AWS_ENDPOINT_URL` and `BEDROCK_CHAT_AWS_API_KEY`
+- **Dummy creds**: boto3 still underlies the Anthropic SDK, so `aws_access_key="unused"` / `aws_secret_key="unused"` are required placeholders
 
 ### Database Encryption Strategy (Revised per Consensus)
 - **Primary**: Field-level Fernet encryption via SQLAlchemy `TypeDecorator` on `Message.content` column
@@ -51,7 +55,7 @@ Browser (React + Tailwind CSS v4)
     |
 FastAPI Server (Python, binds 127.0.0.1 by default)
     |
-    +-- /api/chat/stream (SSE) --> boto3 converse_stream --> AWS Bedrock
+    +-- /api/chat/stream (SSE) --> anthropic.AnthropicBedrock --> GenAI Nexus --> AWS Bedrock
     +-- /api/conversations/*   --> SQLite + Fernet field-level encryption
     +-- /api/models/*          --> models.json (persistent config, file-locked)
     +-- /api/setup             --> First-run passphrase setup + AWS credential check

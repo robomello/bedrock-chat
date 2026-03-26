@@ -41,6 +41,8 @@ def _init_app():
     _bedrock_service = BedrockService(
         region=settings.aws_region,
         profile=settings.aws_profile,
+        endpoint_url=settings.aws_endpoint_url,
+        api_key=settings.aws_api_key,
     )
     _model_config_service = ModelConfigService(
         config_path=Path(settings.data_dir) / "models.json"
