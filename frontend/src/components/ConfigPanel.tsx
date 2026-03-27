@@ -140,28 +140,6 @@ export default function ConfigPanel({
                 className={inputClass}
               />
             </div>
-            <div>
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">
-                Endpoint URL
-              </label>
-              <input
-                value={creds.endpoint_url}
-                onChange={(e) => setCreds({ ...creds, endpoint_url: e.target.value })}
-                placeholder={credsInfo.endpoint_url || "https://genai-nexus.api.corpinter.net"}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">
-                AWS Region
-              </label>
-              <input
-                value={creds.aws_region}
-                onChange={(e) => setCreds({ ...creds, aws_region: e.target.value })}
-                placeholder={credsInfo.aws_region || "us-east-1"}
-                className={inputClass}
-              />
-            </div>
             <button
               onClick={handleSaveCreds}
               className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-bg-primary)] hover:bg-[var(--color-accent-hover)] transition-colors"

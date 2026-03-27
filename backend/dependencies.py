@@ -29,13 +29,16 @@ def _load_credentials(data_dir: str) -> dict:
     return {}
 
 
+NEXUS_ENDPOINT = "https://genai-nexus.api.corpinter.net"
+NEXUS_REGION = "us-east-1"
+
+
 def _build_bedrock_service(settings: Settings) -> BedrockService:
     """Create BedrockService using saved credentials with env var fallback."""
     creds = _load_credentials(settings.data_dir)
     return BedrockService(
-        region=creds.get("aws_region") or settings.aws_region,
-        profile=settings.aws_profile,
-        endpoint_url=creds.get("endpoint_url") or settings.aws_endpoint_url,
+        region=NEXUS_REGION,
+        endpoint_url=settings.aws_endpoint_url or NEXUS_ENDPOINT,
         api_key=creds.get("api_key") or settings.aws_api_key,
     )
 
