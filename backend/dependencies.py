@@ -1,6 +1,7 @@
 """FastAPI dependency injection."""
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Generator
 from pathlib import Path
@@ -18,6 +19,32 @@ _engine = None
 _session_factory = None
 _bedrock_service = None
 _model_config_service = None
+
+
+def _load_credentials(data_dir: str) -> dict:
+    """Load saved credentials from data/credentials.json."""
+    creds_path = Path(data_dir) / "credentials.json"
+    if creds_path.exists():
+        return json.loads(creds_path.read_text())
+    return {}
+
+
+def _build_bedrock_service(settings: Settings) -> BedrockService:
+    """Create BedrockService using saved credentials with env var fallback."""
+    creds = _load_credentials(settings.data_dir)
+    return BedrockService(
+        region=creds.get("aws_region") or settings.aws_region,
+        profile=settings.aws_profile,
+        endpoint_url=creds.get("endpoint_url") or settings.aws_endpoint_url,
+        api_key=creds.get("api_key") or settings.aws_api_key,
+    )
+
+
+def rebuild_bedrock_service():
+    """Hot-reload the Bedrock service with updated credentials."""
+    global _bedrock_service
+    settings = get_settings()
+    _bedrock_service = _build_bedrock_service(settings)
 
 
 def _init_app():
@@ -38,12 +65,7 @@ def _init_app():
     init_database(_engine)
 
     # Init services
-    _bedrock_service = BedrockService(
-        region=settings.aws_region,
-        profile=settings.aws_profile,
-        endpoint_url=settings.aws_endpoint_url,
-        api_key=settings.aws_api_key,
-    )
+    _bedrock_service = _build_bedrock_service(settings)
     _model_config_service = ModelConfigService(
         config_path=Path(settings.data_dir) / "models.json"
     )

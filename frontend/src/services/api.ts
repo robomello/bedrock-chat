@@ -70,6 +70,25 @@ export const api = {
       { method: "POST" },
     ),
 
+  // Settings
+  getCredentials: () =>
+    request<{
+      api_key_set: boolean
+      api_key_masked: string
+      endpoint_url: string
+      aws_region: string
+    }>("/settings/credentials"),
+
+  saveCredentials: (data: {
+    api_key?: string
+    endpoint_url?: string
+    aws_region?: string
+  }) =>
+    request<{ status: string }>("/settings/credentials", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Health
   health: () => request<{ status: string }>("/health"),
 
