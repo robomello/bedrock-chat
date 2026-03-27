@@ -20,11 +20,8 @@ class SetupStatusResponse(BaseModel):
 
 @router.get("/api/setup/status", response_model=SetupStatusResponse)
 async def setup_status(settings: Settings = Depends(get_settings)):
-    """Check if first-run setup is needed."""
-    data_dir = Path(settings.data_dir)
-    db_exists = (data_dir / "bedrock_chat.db").exists()
-    salt_exists = (data_dir / "salt.bin").exists()
-    return {"setup_complete": db_exists and salt_exists}
+    """Always ready — credentials are configured via the settings panel."""
+    return {"setup_complete": True}
 
 
 @router.post("/api/setup/validate-credentials")
