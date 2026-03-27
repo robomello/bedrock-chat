@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { ModelConfig } from "../types"
+import { api } from "../services/api"
 
 interface Props {
   models: ModelConfig[]
@@ -174,6 +175,19 @@ export default function ConfigPanel({
             + Add Model
           </button>
         )}
+
+        <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+          <button
+            onClick={() => {
+              if (window.confirm("Shut down the server?")) {
+                api.shutdown().catch(() => {})
+              }
+            }}
+            className="w-full rounded-lg border border-[var(--color-error)]/30 px-4 py-2 text-sm text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors"
+          >
+            Shut Down Server
+          </button>
+        </div>
       </div>
     </div>
   )

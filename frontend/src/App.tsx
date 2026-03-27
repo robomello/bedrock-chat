@@ -6,9 +6,11 @@ import ModelSelector from "./components/ModelSelector"
 import SetupScreen from "./components/SetupScreen"
 import Sidebar from "./components/Sidebar"
 import SystemPromptInput from "./components/SystemPromptInput"
+import ThemeSelector from "./components/ThemeSelector"
 import { useChat } from "./hooks/useChat"
 import { useConversations } from "./hooks/useConversations"
 import { useModels } from "./hooks/useModels"
+import { useTheme } from "./hooks/useTheme"
 import { api } from "./services/api"
 
 export default function App() {
@@ -16,6 +18,8 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [systemPrompt, setSystemPrompt] = useState("")
+
+  const { theme, setTheme } = useTheme()
 
   const {
     models,
@@ -143,12 +147,15 @@ export default function App() {
       <div className="flex flex-1 flex-col">
         {/* Header */}
         <header className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3">
-          <ModelSelector
-            models={models}
-            selectedId={selectedModelId}
-            onChange={setSelectedModelId}
-            onConfigClick={() => setConfigOpen(true)}
-          />
+          <div className="flex items-center gap-3">
+            <ModelSelector
+              models={models}
+              selectedId={selectedModelId}
+              onChange={setSelectedModelId}
+              onConfigClick={() => setConfigOpen(true)}
+            />
+            <ThemeSelector theme={theme} onChange={setTheme} />
+          </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] md:hidden"

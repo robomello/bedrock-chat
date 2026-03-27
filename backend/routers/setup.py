@@ -37,3 +37,17 @@ async def validate_credentials(
 @router.get("/api/health")
 async def health_check():
     return {"status": "ok"}
+
+
+@router.post("/api/shutdown")
+async def shutdown():
+    """Gracefully shut down the server."""
+    import os
+    import signal
+    import threading
+
+    def _stop():
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    threading.Timer(0.5, _stop).start()
+    return {"status": "shutting_down"}

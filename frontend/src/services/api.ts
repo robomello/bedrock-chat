@@ -72,4 +72,7 @@ export const api = {
 
   // Health
   health: () => request<{ status: string }>("/health"),
+
+  // Server
+  shutdown: () => request<{ status: string }>("/shutdown", { method: "POST" }),
 }

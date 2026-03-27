@@ -11,7 +11,7 @@ from filelock import FileLock
 
 DEFAULT_MODELS = [
     {
-        "id": "us.anthropic.claude-opus-4-6-v1:0",
+        "id": "claude-opus-4-6",
         "display_name": "Claude Opus 4.6",
         "provider": "Anthropic",
         "max_tokens": 8192,
@@ -19,34 +19,18 @@ DEFAULT_MODELS = [
         "supports_system_prompt": True,
     },
     {
-        "id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
-        "display_name": "Claude Sonnet 4.5",
+        "id": "claude-sonnet-4-6",
+        "display_name": "Claude Sonnet 4.6",
         "provider": "Anthropic",
         "max_tokens": 8192,
         "supports_streaming": True,
         "supports_system_prompt": True,
     },
     {
-        "id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "id": "claude-haiku-4-5",
         "display_name": "Claude Haiku 4.5",
         "provider": "Anthropic",
         "max_tokens": 8192,
-        "supports_streaming": True,
-        "supports_system_prompt": True,
-    },
-    {
-        "id": "us.amazon.nova-pro-v1:0",
-        "display_name": "Amazon Nova Pro",
-        "provider": "Amazon",
-        "max_tokens": 4096,
-        "supports_streaming": True,
-        "supports_system_prompt": True,
-    },
-    {
-        "id": "us.amazon.nova-lite-v1:0",
-        "display_name": "Amazon Nova Lite",
-        "provider": "Amazon",
-        "max_tokens": 4096,
         "supports_streaming": True,
         "supports_system_prompt": True,
     },
