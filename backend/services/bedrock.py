@@ -9,6 +9,10 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
+# Supported media types
+IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
+DOC_TYPES = {"application/pdf"}
+
 
 class BedrockService:
     def __init__(
@@ -50,12 +54,48 @@ class BedrockService:
         system_prompt: str = "",
         max_tokens: int = 8192,
         temperature: float = 0.7,
+        attachments: list[dict] | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream chat response from Bedrock using Anthropic SDK."""
-        anthropic_messages = [
-            {"role": m["role"], "content": m["content"]}
-            for m in messages
-        ]
+        # Build messages for the API
+        anthropic_messages = []
+        for m in messages:
+            anthropic_messages.append({"role": m["role"], "content": m["content"]})
+
+        # Inject attachments into the last user message as content blocks
+        if attachments and anthropic_messages:
+            # Walk backwards to find the last user message
+            for idx in range(len(anthropic_messages) - 1, -1, -1):
+                if anthropic_messages[idx]["role"] == "user":
+                    content_blocks = []
+                    for att in attachments:
+                        media_type = att["type"]
+                        if media_type in IMAGE_TYPES:
+                            content_blocks.append({
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": att["data"],
+                                },
+                            })
+                        elif media_type in DOC_TYPES:
+                            content_blocks.append({
+                                "type": "document",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": att["data"],
+                                },
+                            })
+                    text = anthropic_messages[idx]["content"]
+                    content_blocks.append({"type": "text", "text": text})
+                    anthropic_messages[idx] = {
+                        "role": "user",
+                        "content": content_blocks,
+                    }
+                    logger.info("Injected %d attachment block(s) into message %d", len(content_blocks) - 1, idx)
+                    break
 
         kwargs = {
             "model": model_id,
@@ -67,13 +107,6 @@ class BedrockService:
             kwargs["system"] = system_prompt
 
         client = self._get_client()
-
-        def _do_stream():
-            chunks = []
-            with client.messages.stream(**kwargs) as stream:
-                for text in stream.text_stream:
-                    chunks.append(text)
-            return chunks
 
         queue: asyncio.Queue = asyncio.Queue()
 

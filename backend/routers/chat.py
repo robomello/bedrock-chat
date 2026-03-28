@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 
-from botocore.exceptions import ClientError
+import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -43,16 +43,31 @@ async def stream_chat(
     # Save user message BEFORE streaming (prevents loss)
     save_message(db, request.conversation_id, "user", request.content)
 
-    # Create incomplete assistant message placeholder in DB
-    assistant_msg_id = save_message(
-        db, request.conversation_id, "assistant", "", is_complete=False
-    )
-
-    # Prepare messages with sliding window
+    # Prepare messages BEFORE assistant placeholder so the list ends with the
+    # user message — this is critical for attachment injection in bedrock.py
     messages = get_conversation_messages(db, request.conversation_id)
     truncated = prepare_messages_for_bedrock(
         messages, settings.max_context_messages
     )
+
+    # Create incomplete assistant message placeholder in DB (after building
+    # the message list so the placeholder isn't sent to the API)
+    assistant_msg_id = save_message(
+        db, request.conversation_id, "assistant", "", is_complete=False
+    )
+
+    # Resolve attachments eagerly (before the lazy generator runs)
+    attachments = (
+        [a.model_dump() for a in request.attachments]
+        if request.attachments
+        else None
+    )
+    if attachments:
+        logger.info(
+            "Attachments: %d file(s) — %s",
+            len(attachments),
+            ", ".join(f"{a['name']} ({a['type']}, {len(a['data'])} chars)" for a in attachments),
+        )
 
     async def event_generator():
         full_response = []
@@ -63,6 +78,7 @@ async def stream_chat(
                 system_prompt=conversation.system_prompt,
                 max_tokens=request.max_tokens,
                 temperature=request.temperature,
+                attachments=attachments,
             ):
                 full_response.append(chunk)
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
@@ -71,14 +87,14 @@ async def stream_chat(
             update_message(db, assistant_msg_id, complete_text, is_complete=True)
             yield f"data: {json.dumps({'type': 'done', 'conversation_id': request.conversation_id})}\n\n"
 
-        except ClientError as e:
+        except anthropic.APIError as e:
             partial_text = "".join(full_response)
             if partial_text:
                 update_message(
                     db, assistant_msg_id, partial_text, is_complete=False
                 )
-            logger.error("Bedrock error: %s", e)
-            yield f"data: {json.dumps({'type': 'error', 'message': 'An error occurred while generating the response. Check server logs for details.'})}\n\n"
+            logger.error("Anthropic API error: %s", e)
+            yield f"data: {json.dumps({'type': 'error', 'message': f'API error: {e.message}'})}\n\n"
 
         except Exception as e:
             partial_text = "".join(full_response)
@@ -87,7 +103,7 @@ async def stream_chat(
                     db, assistant_msg_id, partial_text, is_complete=False
                 )
             logger.error("Stream error: %s", e)
-            yield f"data: {json.dumps({'type': 'error', 'message': 'An unexpected error occurred.'})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Stream error: {e}'})}\n\n"
 
     return StreamingResponse(
         event_generator(),

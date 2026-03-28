@@ -82,13 +82,13 @@ export default function App() {
   )
 
   const handleSend = useCallback(
-    async (content: string) => {
+    async (content: string, attachments: import("./types").Attachment[] = []) => {
       let convId = conversationId
       if (!convId) {
         const conv = await createConversation(selectedModelId, systemPrompt)
         convId = conv.id
       }
-      await sendMessage(content, selectedModelId, convId)
+      await sendMessage(content, selectedModelId, convId, attachments)
       await refreshConversations()
     },
     [

@@ -101,13 +101,15 @@ async def health_check():
 
 @router.post("/api/shutdown")
 async def shutdown():
-    """Gracefully shut down the server."""
+    """Shut down the server. On Windows, cmd /c window closes automatically."""
     import os
-    import signal
+    import sys
     import threading
 
     def _stop():
-        os.kill(os.getpid(), signal.SIGTERM)
+        # os._exit bypasses cleanup but guarantees the process dies,
+        # which is what we want — cmd /c will then close the window.
+        os._exit(0)
 
     threading.Timer(0.5, _stop).start()
     return {"status": "shutting_down"}

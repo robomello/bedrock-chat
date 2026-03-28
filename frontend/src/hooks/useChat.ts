@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { parseSSEStream } from "../services/stream"
-import type { Message } from "../types"
+import type { Attachment, Message } from "../types"
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -17,6 +17,7 @@ export function useChat() {
     content: string,
     modelId: string,
     convId: string,
+    attachments: Attachment[] = [],
   ) => {
     // Abort any in-flight stream before starting new one
     abortControllerRef.current?.abort()
@@ -27,6 +28,7 @@ export function useChat() {
     const userMsg: Message = {
       role: "user",
       content,
+      attachments: attachments.length > 0 ? attachments : undefined,
       id: crypto.randomUUID(),
     }
     setMessages((prev) => [...prev, userMsg])
@@ -51,6 +53,7 @@ export function useChat() {
           conversation_id: convId,
           model_id: modelId,
           content,
+          attachments,
         }),
         signal: controller.signal,
       })

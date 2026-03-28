@@ -1,7 +1,14 @@
+export interface Attachment {
+  name: string
+  type: string
+  data: string // base64
+}
+
 export interface Message {
   id: string
   role: "user" | "assistant"
   content: string
+  attachments?: Attachment[]
   isError?: boolean
   is_complete?: boolean
   created_at?: string

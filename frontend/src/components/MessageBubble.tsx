@@ -42,9 +42,36 @@ export default function MessageBubble({ message }: Props) {
         }`}
       >
         {isUser ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">
-            {message.content}
-          </p>
+          <div>
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {message.attachments.map((att, i) =>
+                  att.type.startsWith("image/") ? (
+                    <img
+                      key={i}
+                      src={`data:${att.type};base64,${att.data}`}
+                      alt={att.name}
+                      className="max-h-48 rounded-lg border border-[var(--color-border)]"
+                    />
+                  ) : (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-xs"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                      {att.name}
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {message.content}
+            </p>
+          </div>
         ) : (
           <div className="prose prose-invert prose-sm max-w-none text-sm leading-relaxed [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
             <Markdown
