@@ -38,7 +38,7 @@ def _build_bedrock_service(settings: Settings) -> BedrockService:
     creds = _load_credentials(settings.data_dir)
     return BedrockService(
         region=NEXUS_REGION,
-        endpoint_url=settings.aws_endpoint_url or NEXUS_ENDPOINT,
+        endpoint_url=creds.get("endpoint_url") or settings.aws_endpoint_url or NEXUS_ENDPOINT,
         api_key=creds.get("api_key") or settings.aws_api_key,
     )
 

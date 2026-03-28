@@ -27,8 +27,6 @@ export default function ConfigPanel({
   const [form, setForm] = useState({
     id: "",
     display_name: "",
-    provider: "",
-    max_tokens: 8192,
   })
 
   // Credentials state
@@ -60,35 +58,29 @@ export default function ConfigPanel({
   if (!isOpen) return null
 
   const handleAdd = () => {
-    if (!form.id || !form.display_name || !form.provider) return
+    if (!form.id || !form.display_name) return
     onAdd({
-      ...form,
+      id: form.id,
+      display_name: form.display_name,
+      provider: "Anthropic",
+      max_tokens: 8192,
       supports_streaming: true,
       supports_system_prompt: true,
     })
-    setForm({ id: "", display_name: "", provider: "", max_tokens: 8192 })
+    setForm({ id: "", display_name: "" })
     setIsAdding(false)
   }
 
   const handleUpdate = () => {
     if (!editingId) return
-    onUpdate(editingId, {
-      display_name: form.display_name,
-      provider: form.provider,
-      max_tokens: form.max_tokens,
-    })
+    onUpdate(editingId, { display_name: form.display_name })
     setEditingId(null)
-    setForm({ id: "", display_name: "", provider: "", max_tokens: 8192 })
+    setForm({ id: "", display_name: "" })
   }
 
   const startEdit = (m: ModelConfig) => {
     setEditingId(m.id)
-    setForm({
-      id: m.id,
-      display_name: m.display_name,
-      provider: m.provider,
-      max_tokens: m.max_tokens,
-    })
+    setForm({ id: m.id, display_name: m.display_name })
     setIsAdding(false)
   }
 
@@ -165,7 +157,7 @@ export default function ConfigPanel({
                     {m.display_name}
                   </div>
                   <div className="text-xs text-[var(--color-text-secondary)]">
-                    {m.provider} &middot; {m.max_tokens} tokens
+                    {m.id}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -204,21 +196,6 @@ export default function ConfigPanel({
                 placeholder="Display Name"
                 className={inputClass}
               />
-              <input
-                value={form.provider}
-                onChange={(e) => setForm({ ...form, provider: e.target.value })}
-                placeholder="Provider"
-                className={inputClass}
-              />
-              <input
-                type="number"
-                value={form.max_tokens}
-                onChange={(e) =>
-                  setForm({ ...form, max_tokens: Number(e.target.value) })
-                }
-                placeholder="Max Tokens"
-                className={inputClass}
-              />
               <div className="flex gap-2">
                 <button
                   onClick={editingId ? handleUpdate : handleAdd}
@@ -230,12 +207,7 @@ export default function ConfigPanel({
                   onClick={() => {
                     setIsAdding(false)
                     setEditingId(null)
-                    setForm({
-                      id: "",
-                      display_name: "",
-                      provider: "",
-                      max_tokens: 8192,
-                    })
+                    setForm({ id: "", display_name: "" })
                   }}
                   className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                 >
